@@ -31,8 +31,11 @@ import org.geotools.styling.SLD;
 import org.geotools.styling.Style;
 import org.geotools.swing.JMapFrame;
 import org.opengis.feature.simple.SimpleFeature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 
 import com.vividsolutions.jts.geom.MultiPolygon;
 
@@ -40,7 +43,7 @@ public class CoverageOptimization {
 
 	static ArrayList<PolygonWrapper> polygons = new ArrayList<PolygonWrapper>();
 	private static Properties properties;
-    private static final Logger _log = LoggerFactory.getLogger(CoverageOptimization.class);
+    private static final Logger _log = LogManager.getLogger(CoverageOptimization.class.getName());
 
 	static class IntersectedPolygons implements TIntProcedure{
 
@@ -55,7 +58,6 @@ public class CoverageOptimization {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		
 		loadProperties();
 		SimpleFeatureSource featureSource = loadShapefile();
 

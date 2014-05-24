@@ -7,6 +7,9 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import net.sf.jsi.Rectangle;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -14,7 +17,9 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 
 public class PolygonWrapper {
 
-	public static double circleRadius = 30;
+    private static final Logger _log = LogManager.getLogger(PolygonWrapper.class.getName());
+
+	public final static double circleRadius = 30;
 	private MultiPolygon mp;
 	private Area coveringCirclesIntersection;
 
@@ -88,7 +93,9 @@ public class PolygonWrapper {
 		while (!pathIterator.isDone()) {
 			double[] coords = new double[6];
 			int type = pathIterator.currentSegment(coords);
-//			verbose(coords, type);
+			if(_log.isDebugEnabled()){
+				verboseLineSegments(coords, type);
+			}
 			if (type == PathIterator.SEG_LINETO || type == PathIterator.SEG_MOVETO) {
 				intersectionPoints.add(new Point2D.Double(coords[0], coords[1]));
 			}
@@ -97,25 +104,25 @@ public class PolygonWrapper {
 		return intersectionPoints;
 	}
 
-	private void verbose(double[] coords, int type) {
+	private void verboseLineSegments(double[] coords, int type) {
 			switch (type) {
 			case PathIterator.SEG_MOVETO:
-				System.out.println("move to " + coords[0] + ", " + coords[1]);
+				_log.debug("move to " + coords[0] + ", " + coords[1]);
 				break;
 			case PathIterator.SEG_LINETO:
-				System.out.println("line to " + coords[0] + ", " + coords[1]);
+				_log.debug("line to " + coords[0] + ", " + coords[1]);
 				break;
 			case PathIterator.SEG_QUADTO:
-				System.out.println("quadratic to " + coords[0] + ", "
+				_log.debug("quadratic to " + coords[0] + ", "
 						+ coords[1] + ", " + coords[2] + ", " + coords[3]);
 				break;
 			case PathIterator.SEG_CUBICTO:
-				System.out.println("cubic to " + coords[0] + ", " + coords[1]
+				_log.debug("cubic to " + coords[0] + ", " + coords[1]
 						+ ", " + coords[2] + ", " + coords[3] + ", "
 						+ coords[4] + ", " + coords[5]);
 				break;
 			case PathIterator.SEG_CLOSE:
-				System.out.println("close");
+				_log.debug("close");
 				break;
 			default:
 				break;
