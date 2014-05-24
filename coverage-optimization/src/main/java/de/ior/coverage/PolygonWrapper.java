@@ -14,7 +14,7 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 
 public class PolygonWrapper {
 
-	public static double circleRadius = 20;
+	public static double circleRadius = 30;
 	private MultiPolygon mp;
 	private Area coveringCirclesIntersection;
 
@@ -53,20 +53,19 @@ public class PolygonWrapper {
 	}
 
 
-	public List<Point2D> getIntersectionPoints(Area area) {
-		
+	public List<Point2D> getIntersectionPoints(PolygonWrapper polygon) {
+		Area polygonToIntersectWith = (Area) polygon.getCoveringCirclesIntersection().clone();
 		Area intersectionBetweenBothAreas = (Area) coveringCirclesIntersection.clone();
-		intersectionBetweenBothAreas.intersect(area);
+		intersectionBetweenBothAreas.intersect(polygonToIntersectWith);
 		
 		List<Point2D> intersectionPointCandidates = getVertices(intersectionBetweenBothAreas);
-		getIntersectionPoints(area, intersectionPointCandidates);
-		
-		return intersectionPointCandidates;
+		List<Point2D> result = getIntersectionPoints(polygonToIntersectWith, intersectionPointCandidates);
+
+		return result;
 	}
 
 
-	private void getIntersectionPoints(Area area,
-			List<Point2D> intersectionPointCandidates) {
+	private List<Point2D> getIntersectionPoints(Area area, List<Point2D> intersectionPointCandidates) {
 		List<Point2D> result = new ArrayList<Point2D>();
 		
 		for(Point2D p : intersectionPointCandidates){
@@ -78,6 +77,7 @@ public class PolygonWrapper {
 				result.add(p);
 			}
 		}
+		return result;
 	}
 
 	private List<Point2D> getVertices(Area area) {
@@ -87,13 +87,40 @@ public class PolygonWrapper {
 
 		while (!pathIterator.isDone()) {
 			double[] coords = new double[6];
-			if (pathIterator.currentSegment(coords) == PathIterator.SEG_LINETO) {
+			int type = pathIterator.currentSegment(coords);
+//			verbose(coords, type);
+			if (type == PathIterator.SEG_LINETO || type == PathIterator.SEG_MOVETO) {
 				intersectionPoints.add(new Point2D.Double(coords[0], coords[1]));
 			}
 			pathIterator.next();
 		}
 		return intersectionPoints;
 	}
+
+	private void verbose(double[] coords, int type) {
+			switch (type) {
+			case PathIterator.SEG_MOVETO:
+				System.out.println("move to " + coords[0] + ", " + coords[1]);
+				break;
+			case PathIterator.SEG_LINETO:
+				System.out.println("line to " + coords[0] + ", " + coords[1]);
+				break;
+			case PathIterator.SEG_QUADTO:
+				System.out.println("quadratic to " + coords[0] + ", "
+						+ coords[1] + ", " + coords[2] + ", " + coords[3]);
+				break;
+			case PathIterator.SEG_CUBICTO:
+				System.out.println("cubic to " + coords[0] + ", " + coords[1]
+						+ ", " + coords[2] + ", " + coords[3] + ", "
+						+ coords[4] + ", " + coords[5]);
+				break;
+			case PathIterator.SEG_CLOSE:
+				System.out.println("close");
+				break;
+			default:
+				break;
+			}
+		}
 
 	@Override
 	public String toString() {
@@ -106,6 +133,10 @@ public class PolygonWrapper {
 		return polygonDescription.toString();
 	}
 
+	public List<Point2D> getCoveringCircleIntersectionPoints(){
+		return getVertices(coveringCirclesIntersection);
+	}
+	
 	public String coveringCircleIntersectionPoints() {
 		StringBuffer result = new StringBuffer();
 		result.append("covering circle intersection (x,y) vertices: ");
