@@ -14,7 +14,7 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 
 public class PolygonWrapper {
 
-	public static double circleRadius = 30;
+	public static double circleRadius = 20;
 	private MultiPolygon mp;
 	private Area coveringCirclesIntersection;
 
@@ -23,16 +23,23 @@ public class PolygonWrapper {
 	}
 
 
-	public PolygonWrapper(MultiPolygon mp) {
+	public PolygonWrapper(MultiPolygon mp) throws Exception {
 		this.mp = mp;
 		calculateCoveringCirclesIntersection();
+
+		java.awt.Rectangle bounds = coveringCirclesIntersection.getBounds();
+		
+		double sqrt = Math.sqrt(Math.pow(bounds.width,2) * Math.pow(bounds.height,2));
+		if(sqrt<circleRadius){
+			throw new Exception("circle Radius does not cover polygon");
+		}
 	}
 
 	public Rectangle getSpatialStorageRectangle(){
 		java.awt.Rectangle bounds = coveringCirclesIntersection.getBounds();
-		//TODO: check for circle radius < polygon, which means there is no coveringCircleIntersection
-		//TODO: add object vertices if no intersection
+		
 		Rectangle rTreeRectangle = new Rectangle((float)bounds.getMinX(), (float)bounds.getMinY(), (float)bounds.getMaxX(), (float)bounds.getMaxY());
+		
 		return rTreeRectangle;
 	}
 
