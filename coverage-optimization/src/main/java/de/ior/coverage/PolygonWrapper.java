@@ -15,14 +15,20 @@ import net.sf.jsi.Rectangle;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.MultiPolygon;
 
+import de.ior.utils.ProjectProperties;
+
 public class PolygonWrapper {
 
     private static final Logger _log = LogManager.getLogger(PolygonWrapper.class.getName());
 
-	public final static double circleRadius = 30;
+	public final static double circleRadius;
 	private MultiPolygon mp;
 	private Area coveringCirclesIntersection;
 
+	static{
+		circleRadius = Double.parseDouble(ProjectProperties.getProperties().getProperty(("circle-radius")));
+		_log.info("using circle radius: " + circleRadius);
+	}
 	public Area getCoveringCirclesIntersection() {
 		return coveringCirclesIntersection;
 	}
@@ -33,7 +39,6 @@ public class PolygonWrapper {
 		calculateCoveringCirclesIntersection();
 
 		java.awt.Rectangle bounds = coveringCirclesIntersection.getBounds();
-		
 		double sqrt = Math.sqrt(Math.pow(bounds.width,2) * Math.pow(bounds.height,2));
 		if(sqrt<circleRadius){
 			throw new Exception("circle Radius does not cover polygon");

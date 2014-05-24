@@ -37,12 +37,14 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 
+
 import com.vividsolutions.jts.geom.MultiPolygon;
+
+import de.ior.utils.ProjectProperties;
 
 public class CoverageOptimization {
 
 	static ArrayList<PolygonWrapper> polygons = new ArrayList<PolygonWrapper>();
-	private static Properties properties;
     private static final Logger _log = LogManager.getLogger(CoverageOptimization.class.getName());
 
 	static class IntersectedPolygons implements TIntProcedure{
@@ -58,7 +60,6 @@ public class CoverageOptimization {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		loadProperties();
 		SimpleFeatureSource featureSource = loadShapefile();
 
 		extractPolygons(featureSource);
@@ -66,7 +67,7 @@ public class CoverageOptimization {
 		SpatialIndex si = setupRTree();
 		
 		HashSet<Point2D> PIPS = calculatePIPS(si);
-		exportPIPS(PIPS,properties.getProperty("export-folder"),properties.getProperty("export-filename"));
+		exportPIPS(PIPS,ProjectProperties.getProperties().getProperty("export-folder"),ProjectProperties.getProperties().getProperty("export-filename"));
 		_log.info("done");
 		// displayMap(featureSource);
 	}
@@ -97,6 +98,7 @@ public class CoverageOptimization {
 			List<Integer> ids = intersected.getIds();
 			
 			intersectPolygon(PIPS, i, polygonToCheck, ids); 
+			_log.info("found " + ids.size() + " intersection points");
 		}
 		return PIPS;
 	}
@@ -128,12 +130,6 @@ public class CoverageOptimization {
 		return si;
 	}
 
-	private static void loadProperties() throws IOException,
-			FileNotFoundException {
-		properties = new Properties();
-		properties.load(new FileInputStream("project.properties"));
-	}
-
 	private static void extractPolygons(SimpleFeatureSource featureSource)
 			throws Exception {
 		SimpleFeatureIterator features = featureSource.getFeatures().features();
@@ -146,8 +142,8 @@ public class CoverageOptimization {
 	}
 
 	private static SimpleFeatureSource loadShapefile() throws IOException {
-		// File file = new File(properties.getProperty("filename"));
-		File file = new File("testdata" + File.separator + "testdata.shp");
+		 File file = new File(ProjectProperties.getProperties().getProperty("filename"));
+//		File file = new File("testdata" + File.separator + "testdata.shp");
 		FileDataStore store = FileDataStoreFinder.getDataStore(file);
 		SimpleFeatureSource featureSource = store.getFeatureSource();
 		return featureSource;
