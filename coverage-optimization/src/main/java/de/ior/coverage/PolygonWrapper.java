@@ -44,6 +44,15 @@ public class PolygonWrapper {
 			throw new Exception("circle Radius does not cover polygon");
 		}
 	}
+	
+	public List<Point2D> getPolygonVertices(){
+        	ArrayList<Point2D> result = new ArrayList<Point2D>();
+        	for (Coordinate c : mp.getCoordinates()){
+        	 result.add(new Point2D.Double(c.x, c.y));
+        	}
+         return result ;
+ 	}
+
 
 	public Rectangle getSpatialStorageRectangle(){
 		java.awt.Rectangle bounds = coveringCirclesIntersection.getBounds();
