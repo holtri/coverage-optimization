@@ -93,16 +93,24 @@ public class CoverageOptimization {
 	}
 
 	private static void outputSolutionSet(SolutionSet solutionSet) {
-		List<Solution> solutions = solutionSet.getSolutions();
-		for(Solution s : solutions){
-			System.out.println("Solution " + s.getId() + " covers polygons: " + s.getCoveredPolygonIds());
+		if (_log.isDebugEnabled()) {
+			List<Solution> solutions = solutionSet.getSolutions();
+			for (Solution s : solutions) {
+				_log.debug("Solution " + s.getId() + " covers polygons: "
+						+ s.getCoveredPolygonIds());
+			}
 		}
 	}
 
 	private static SolutionSet reducePIPS(HashSet<Point2D> PIPS, SpatialIndex si) {
+		
+		_log.info("reducing PIPS...");
 		SolutionSet solutionSet = new SolutionSet();
 		double circleRadius = java.lang.Double.parseDouble(ProjectProperties.getProperties().getProperty("circle-radius"));
+		int i=0;
 		for(Point2D p : PIPS){
+			i++;
+			_log.info("checking PIP " + i + " of " + PIPS.size());
 			Ellipse2D.Double serviceRadius = new Ellipse2D.Double(p.getX() - circleRadius, p.getY() - circleRadius, circleRadius * 2 , circleRadius * 2);
 			java.awt.Rectangle bounds = serviceRadius.getBounds();
 			Rectangle searchRectangle = new Rectangle((float)bounds.getMinX(), (float)bounds.getMinY(), (float)bounds.getMaxX(), (float)bounds.getMaxY());
