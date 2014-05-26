@@ -25,9 +25,11 @@ public class SolutionSet {
 		for(Solution s : getSolutions()){
 			if(s.coveredPolygonIds.containsAll(coveredPolygonIds)){
 				isDominated = true;
-				_log.info("##found dominated solution");
-				_log.info("#### dominating covers: " + s.getCoveredPolygonIds());
-				_log.info("#### dominated  covers: " + coveredPolygonIds);
+				if(_log.isDebugEnabled()){
+					_log.debug("##found dominated solution");
+					_log.debug("#### dominating covers: " + s.getCoveredPolygonIds());
+					_log.debug("#### dominated  covers: " + coveredPolygonIds);
+				}
 				
 				break;
 			}
