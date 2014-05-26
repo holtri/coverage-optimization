@@ -101,46 +101,43 @@ public class CoverageOptimization {
 
 	private static SolutionSet reducePIPS(HashSet<Point2D> PIPS, SpatialIndex si) {
 		SolutionSet solutionSet = new SolutionSet();
-		int i=0;
 		double circleRadius = java.lang.Double.parseDouble(ProjectProperties.getProperties().getProperty("circle-radius"));
 		for(Point2D p : PIPS){
-			i++;
-//			_log.info("reducing solution point " + i + " of " + PIPS.size());
 			Ellipse2D.Double serviceRadius = new Ellipse2D.Double(p.getX() - circleRadius, p.getY() - circleRadius, circleRadius * 2 , circleRadius * 2);
-//			_log.info("p_x: " + p.getX() + " y:" + p.getY() + " serviceRadius: x:" + serviceRadius.getCenterX() + " y:" + serviceRadius.getCenterY());
 			java.awt.Rectangle bounds = serviceRadius.getBounds();
 			Rectangle searchRectangle = new Rectangle((float)bounds.getMinX(), (float)bounds.getMinY(), (float)bounds.getMaxX(), (float)bounds.getMaxY());
 			
 			DetectedPolygons contained = new DetectedPolygons();
 			si.intersects(searchRectangle, contained);
 			List<Integer> ids = contained.getIds();
-//			_log.info("this solution point intersects polygon with ids: " + ids);
-			HashSet<Integer> coveredPolygonIds = new HashSet<Integer>();
-			for(Integer id : ids){
-				PolygonWrapper polygon = polygons.get(id);
-				boolean coverage = true;
-				double eps = 0.02;
-				for(Point2D vertice : polygon.getPolygonVertices()){
-					if(!serviceRadius.intersects(vertice.getX()- eps/2, vertice.getY()-eps/2, eps, eps)){//(vertice)){
-//					if(!serviceRadius.contains(vertice)){
-//					_log.info("distance x: " + (serviceRadius.getCenterX() - vertice.getX()) + " distance y: " + (serviceRadius.getCenterY() - vertice.getY()));
-						coverage = false;
-//						_log.info("polygon not covered");
-						break;
-					}
-				}
-				if(coverage){
-					coveredPolygonIds.add(id);
-				}
-			}
+			
+			HashSet<Integer> coveredPolygonIds = calculateCoveredPolygons(serviceRadius, ids);
+			
 			solutionSet.addSolution(p, coveredPolygonIds);
 		}
 		
-		//TODO round to cm
-		//TODO put point to temp hashset to avoid duplicates
-		//TODO map critical point to polygons that are covered: e.g. s_1 -> {p1, p2, p3} 
-		
 		return solutionSet;
+	}
+
+	private static HashSet<Integer> calculateCoveredPolygons(
+			Ellipse2D.Double serviceRadius, List<Integer> ids
+			) {
+		HashSet<Integer> coveredPolygonIds = new HashSet<Integer>();;
+		for(Integer id : ids){
+			PolygonWrapper polygon = polygons.get(id);
+			boolean coverage = true;
+			double eps = 0.02;
+			for(Point2D vertice : polygon.getPolygonVertices()){
+				if(!serviceRadius.intersects(vertice.getX()- eps/2, vertice.getY()-eps/2, eps, eps)){//(vertice)){
+					coverage = false;
+					break;
+				}
+			}
+			if(coverage){
+				coveredPolygonIds.add(id);
+			}
+		}
+		return coveredPolygonIds;
 	}
 
 	private static void exportPIPS(HashSet<Point2D> PIPS, String folder, String filename) throws IOException {
@@ -183,20 +180,12 @@ public class CoverageOptimization {
 			PolygonWrapper polygonToCheck, List<Integer> ids) {
 		if(ids.size()==1) {
 			PIPS.addAll(polygonToCheck.getCoveringCircleIntersectionPoints());
-//				System.out.println("no intersecting polygon for item " + i);
 		}
 		else{
 			for(Integer id : ids){
 				if(id!=i){
-//						System.out.println("add ips of " + i + " and " + id + " to PIPS");
 					List<Point2D> intersectionPoints = polygonToCheck.getIntersectionPoints(polygons.get(id));
 					PIPS.addAll(intersectionPoints);
-//					_log.info("intersection point between circle " + i + " and circle " + id + " at: ");
-//					for(Point2D p : intersectionPoints){
-//						_log.info("x: " + p.getX() + " y: " + p.getY());
-//						
-//					}
-					
 				}
 			}
 		}
@@ -206,7 +195,6 @@ public class CoverageOptimization {
 		SpatialIndex si = new RTree();
 		si.init(null);
 
-		// store in R tree
 		for (int i = 0; i < polygons.size(); i++) {
 			si.add(polygons.get(i).getSpatialStorageRectangle(), i);
 		}
