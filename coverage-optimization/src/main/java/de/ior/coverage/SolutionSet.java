@@ -2,6 +2,7 @@ package de.ior.coverage;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -52,6 +53,24 @@ public class SolutionSet {
 	}
 
 
+	public HashMap<Integer, HashSet<Integer>> getPolygonToSolutionMapping(){
+		HashMap<Integer, HashSet<Integer>> polygonToSolution = new HashMap<Integer, HashSet<Integer>>();
+		
+		for(Solution s : solutions){
+//			_log.info("mapping solution Id: " + s.getId() );
+			for(Integer polygonId : s.getCoveredPolygonIds()){
+				if(polygonToSolution.get(polygonId) == null){
+					HashSet<Integer> solutionIds = new HashSet<Integer>();
+					solutionIds.add(s.getId());
+					polygonToSolution.put(polygonId, solutionIds);
+				}else{
+					polygonToSolution.get(polygonId).add(s.getId());
+				}
+			}
+		}
+		return polygonToSolution;
+	}
+	
 	class Solution{
 		private HashSet<Integer> coveredPolygonIds;
 		private Point2D solutionPoint;

@@ -12,8 +12,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -36,19 +39,8 @@ import org.geotools.styling.SLD;
 import org.geotools.styling.Style;
 import org.geotools.swing.JMapFrame;
 import org.opengis.feature.simple.SimpleFeature;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-
-
-
-
-
-
-
-
-
 
 import com.vividsolutions.jts.geom.MultiPolygon;
 
@@ -73,23 +65,66 @@ public class CoverageOptimization {
 	}
 	
 	public static void main(String[] args) throws Exception {
+		long millis = System.currentTimeMillis();
+		
 		SimpleFeatureSource featureSource = loadShapefile();
 
 		extractPolygons(featureSource);
-
-		SpatialIndex si = setupRTree();
 		
+		SpatialIndex si = setupRTree();
 		HashSet<Point2D> PIPS = calculatePIPS(si);
 		_log.info("found " + PIPS.size() + " polygon intersection points.");
 		
 		SolutionSet solutionSet = reducePIPS(PIPS, si);
-		
+		_log.info("reduced polygon intersection points to " + solutionSet.getSolutionPoints().size());
 		outputSolutionSet(solutionSet);
+		
+		outputWeights();
 		
 		exportPIPS(PIPS,ProjectProperties.getProperties().getProperty("export-folder"),ProjectProperties.getProperties().getProperty("export-filename"));
 		
+		createXPressDataFile(solutionSet,ProjectProperties.getProperties().getProperty("export-folder"),ProjectProperties.getProperties().getProperty("export-filename"));
+		
+		_log.info("total time: " + (System.currentTimeMillis() - millis));
 		_log.info("done");
 		// displayMap(featureSource);
+	}
+
+	private static void createXPressDataFile(SolutionSet solutionSet,
+			String folder, String filename) throws IOException {
+		
+		File file = new File(folder + filename + System.currentTimeMillis() + ".dat");
+		_log.info("exporting to " + file.getAbsolutePath());
+		file.createNewFile();
+		PrintWriter pw = new PrintWriter(file);
+		
+		pw.println("numberOfPolygons: " + polygons.size());
+		pw.println("numberOfFacilityLocations: " + solutionSet.getSolutions().size());
+		pw.print("polygonWeight: [");
+		for(int i=0; i<polygons.size();i++){
+			pw.print(polygons.get(i).getWeight() + " ");
+		}
+		pw.println("]");
+		pw.print("n: [");
+		HashMap<Integer, HashSet<Integer>> polygonToSolutionMapping = solutionSet.getPolygonToSolutionMapping();
+		for(Integer i : polygonToSolutionMapping.keySet()){
+			pw.print("(" + (i+1) + ")" + "[");
+			for(Integer j : polygonToSolutionMapping.get(i)){
+				pw.print(j + " ");
+			}
+			pw.print("]");
+		}
+		pw.print("]");
+		pw.close();
+	}
+
+	private static void outputWeights() {
+		HashMap<Integer, java.lang.Double> polygonWeights = new HashMap<Integer, java.lang.Double>();
+		for(int i=0; i < polygons.size(); i++){
+			polygonWeights.put(i, polygons.get(i).getWeight());
+		}
+		_log.info("weights:");
+		_log.info(polygonWeights);
 	}
 
 	private static void outputSolutionSet(SolutionSet solutionSet) {
@@ -98,6 +133,10 @@ public class CoverageOptimization {
 			for (Solution s : solutions) {
 				_log.debug("Solution " + s.getId() + " covers polygons: "
 						+ s.getCoveredPolygonIds());
+			}
+			_log.info("polygon to solution mapping: " );
+			for(Integer solutionId : solutionSet.getPolygonToSolutionMapping().keySet()){
+				_log.debug(solutionId + " --> " + solutionSet.getPolygonToSolutionMapping().get(solutionId));
 			}
 		}
 	}
@@ -110,7 +149,7 @@ public class CoverageOptimization {
 		int i=0;
 		for(Point2D p : PIPS){
 			i++;
-			_log.info("checking PIP " + i + " of " + PIPS.size());
+//			_log.info("checking PIP " + i + " of " + PIPS.size());
 			Ellipse2D.Double serviceRadius = new Ellipse2D.Double(p.getX() - circleRadius, p.getY() - circleRadius, circleRadius * 2 , circleRadius * 2);
 			java.awt.Rectangle bounds = serviceRadius.getBounds();
 			Rectangle searchRectangle = new Rectangle((float)bounds.getMinX(), (float)bounds.getMinY(), (float)bounds.getMaxX(), (float)bounds.getMaxY());
@@ -167,7 +206,7 @@ public class CoverageOptimization {
 		HashSet<Point2D> PIPS = new HashSet<Point2D>();
 		
 		for (int i = 0; i < polygons.size(); i++) {
-			_log.info("calculating PIPS for polygon " + i + " of " + polygons.size());
+//			_log.info("calculating PIPS for polygon " + i + " of " + polygons.size());
 			PolygonWrapper polygonToCheck = polygons.get(i);
 
 			DetectedPolygons intersected = new DetectedPolygons();
@@ -175,7 +214,7 @@ public class CoverageOptimization {
 			List<Integer> ids = intersected.getIds();
 			
 			intersectPolygon(PIPS, i, polygonToCheck, ids); 
-			_log.info("found " + ids.size() + " intersection points");
+//			_log.info("found " + ids.size() + " intersection points");
 		}
 		
 		

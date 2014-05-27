@@ -33,7 +33,9 @@ public class PolygonWrapper {
 		return coveringCirclesIntersection;
 	}
 
-
+	public double getWeight (){
+		return mp.getArea();
+	}
 	public PolygonWrapper(MultiPolygon mp) throws Exception {
 		this.mp = mp;
 		calculateCoveringCirclesIntersection();
