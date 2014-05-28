@@ -23,13 +23,6 @@ import org.geotools.data.FileDataStore;
 import org.geotools.data.FileDataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
-import org.geotools.feature.SchemaException;
-import org.geotools.map.FeatureLayer;
-import org.geotools.map.Layer;
-import org.geotools.map.MapContent;
-import org.geotools.styling.SLD;
-import org.geotools.styling.Style;
-import org.geotools.swing.JMapFrame;
 import org.opengis.feature.simple.SimpleFeature;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -257,18 +250,6 @@ public class CoverageOptimization {
 		FileDataStore store = FileDataStoreFinder.getDataStore(file);
 		SimpleFeatureSource featureSource = store.getFeatureSource();
 		return featureSource;
-	}
-
-	private static void displayMap(SimpleFeatureSource featureSource)
-			throws SchemaException {
-		MapContent map = new MapContent();
-		map.setTitle("TestData");
-
-		Style style = SLD.createSimpleStyle(featureSource.getSchema());
-		Layer layer = new FeatureLayer(featureSource, style);
-
-		map.addLayer(layer);
-		JMapFrame.showMap(map);
 	}
 
 }
