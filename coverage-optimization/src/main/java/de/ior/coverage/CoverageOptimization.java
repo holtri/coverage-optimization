@@ -2,33 +2,23 @@ package de.ior.coverage;
 
 import gnu.trove.procedure.TIntProcedure;
 
-import java.awt.Shape;
-import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
-import java.awt.geom.Ellipse2D.Double;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 
 import net.sf.jsi.Rectangle;
 import net.sf.jsi.SpatialIndex;
 import net.sf.jsi.rtree.RTree;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.geotools.data.FileDataStore;
 import org.geotools.data.FileDataStoreFinder;
 import org.geotools.data.simple.SimpleFeatureIterator;
@@ -41,10 +31,11 @@ import org.geotools.styling.SLD;
 import org.geotools.styling.Style;
 import org.geotools.swing.JMapFrame;
 import org.opengis.feature.simple.SimpleFeature;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
 
 import de.ior.coverage.SolutionSet.Solution;
 import de.ior.utils.ProjectProperties;
@@ -82,23 +73,38 @@ public class CoverageOptimization {
 		
 		SolutionSet solutionSet = reducePIPS(PIPS, si);
 		_log.info("reduced polygon intersection points to " + solutionSet.getSolutionPoints().size());
+		
 		outputSolutionSet(solutionSet);
-		
-//		outputWeights();
-		
-//		exportPIPS(PIPS,ProjectProperties.getProperties().getProperty("export-folder"),ProjectProperties.getProperties().getProperty("export-filename"));
 		
 		createXPressDataFile(solutionSet,ProjectProperties.getProperties().getProperty("export-folder"),ProjectProperties.getProperties().getProperty("export-filename"));
 		
 		HashSet<Integer> optimalFacilityLocations = new MCLPXpressWrapper().solveMCLP("xpress\\tmpData.dat");
 		
-		_log.info(optimalFacilityLocations);
+		exportShapeFiles(solutionSet, optimalFacilityLocations);
+		
+//		_log.info(optimalFacilityLocations);
 		_log.info("total time: " + (System.currentTimeMillis() - millis));
 		_log.info("done");
-		
-		//tmp.delete();
-		// displayMap(featureSource);
 	}
+
+
+
+	private static void exportShapeFiles(SolutionSet solutionSet,
+			HashSet<Integer> optimalFacilityLocations) {
+		
+		List<Coordinate> coordinates = new ArrayList<Coordinate>();
+		for(Integer i: optimalFacilityLocations){
+			Point2D solutionPoint = solutionSet.getSolutions().get(i).getSolutionPoint();
+			coordinates.add(new Coordinate(solutionPoint.getX(), solutionPoint.getY()));
+		}
+		File export = new File(ProjectProperties.getProperties().getProperty("export-folder") + "\\campus_points_" +System.currentTimeMillis()+ ".shp");
+		new ShapeFileExporter(Point.class).exportShapes(coordinates, export);
+		
+		export = new File(ProjectProperties.getProperties().getProperty("export-folder") + "\\campus_polygons_" +System.currentTimeMillis()+ ".shp");
+		new ShapeFileExporter(Polygon.class).exportShapes(coordinates, export);
+	}
+
+	
 
 	private static void createXPressDataFile(SolutionSet solutionSet,
 			String folder, String filename) throws IOException {
@@ -131,15 +137,6 @@ public class CoverageOptimization {
 		Files.copy(file.toPath(), tmp.toPath());
 	}
 
-	private static void outputWeights() {
-		HashMap<Integer, java.lang.Double> polygonWeights = new HashMap<Integer, java.lang.Double>();
-		for(int i=0; i < polygons.size(); i++){
-			polygonWeights.put(i, polygons.get(i).getWeight());
-		}
-		_log.info("weights:");
-		_log.info(polygonWeights);
-	}
-
 	private static void outputSolutionSet(SolutionSet solutionSet) {
 		if (_log.isDebugEnabled()) {
 			List<Solution> solutions = solutionSet.getSolutions();
@@ -159,10 +156,7 @@ public class CoverageOptimization {
 		_log.info("reducing PIPS...");
 		SolutionSet solutionSet = new SolutionSet();
 		double circleRadius = java.lang.Double.parseDouble(ProjectProperties.getProperties().getProperty("circle-radius"));
-		int i=0;
 		for(Point2D p : PIPS){
-			i++;
-//			_log.info("checking PIP " + i + " of " + PIPS.size());
 			Ellipse2D.Double serviceRadius = new Ellipse2D.Double(p.getX() - circleRadius, p.getY() - circleRadius, circleRadius * 2 , circleRadius * 2);
 			java.awt.Rectangle bounds = serviceRadius.getBounds();
 			Rectangle searchRectangle = new Rectangle((float)bounds.getMinX(), (float)bounds.getMinY(), (float)bounds.getMaxX(), (float)bounds.getMaxY());
@@ -200,26 +194,14 @@ public class CoverageOptimization {
 		return coveredPolygonIds;
 	}
 
-	private static void exportPIPS(HashSet<Point2D> PIPS, String folder, String filename) throws IOException {
-
-		File file = new File(folder + filename + System.currentTimeMillis() + ".csv");
-		_log.info("exporting to " + file.getAbsolutePath());
-		file.createNewFile();
-		CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(file), CSVFormat.EXCEL.withHeader("x-cor", "y-cor"));
-		csvPrinter.printRecord("x-cor","y-cor");
-		DecimalFormat df = new DecimalFormat(".###");
-		for(Point2D p : PIPS){
-			csvPrinter.printRecord(df.format(p.getX()),df.format(p.getY()));
-		}
-		csvPrinter.close();
-	}
+	
 
 	private static HashSet<Point2D> calculatePIPS(SpatialIndex si) {
 		
 		HashSet<Point2D> PIPS = new HashSet<Point2D>();
 		
 		for (int i = 0; i < polygons.size(); i++) {
-//			_log.info("calculating PIPS for polygon " + i + " of " + polygons.size());
+			_log.debug("calculating PIPS for polygon " + i + " of " + polygons.size());
 			PolygonWrapper polygonToCheck = polygons.get(i);
 
 			DetectedPolygons intersected = new DetectedPolygons();
@@ -227,10 +209,7 @@ public class CoverageOptimization {
 			List<Integer> ids = intersected.getIds();
 			
 			intersectPolygon(PIPS, i, polygonToCheck, ids); 
-//			_log.info("found " + ids.size() + " intersection points");
 		}
-		
-		
 		return PIPS;
 	}
 
