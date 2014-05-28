@@ -10,9 +10,11 @@ import java.awt.geom.Ellipse2D.Double;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -47,10 +49,13 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import de.ior.coverage.SolutionSet.Solution;
 import de.ior.utils.ProjectProperties;
 
+
+
 public class CoverageOptimization {
 
 	static ArrayList<PolygonWrapper> polygons = new ArrayList<PolygonWrapper>();
     private static final Logger _log = LogManager.getLogger(CoverageOptimization.class.getName());
+	private static File tmp;
 
 	static class DetectedPolygons implements TIntProcedure{
 
@@ -79,20 +84,25 @@ public class CoverageOptimization {
 		_log.info("reduced polygon intersection points to " + solutionSet.getSolutionPoints().size());
 		outputSolutionSet(solutionSet);
 		
-		outputWeights();
+//		outputWeights();
 		
-		exportPIPS(PIPS,ProjectProperties.getProperties().getProperty("export-folder"),ProjectProperties.getProperties().getProperty("export-filename"));
+//		exportPIPS(PIPS,ProjectProperties.getProperties().getProperty("export-folder"),ProjectProperties.getProperties().getProperty("export-filename"));
 		
 		createXPressDataFile(solutionSet,ProjectProperties.getProperties().getProperty("export-folder"),ProjectProperties.getProperties().getProperty("export-filename"));
 		
+		HashSet<Integer> optimalFacilityLocations = new MCLPXpressWrapper().solveMCLP("xpress\\tmpData.dat");
+		
+		_log.info(optimalFacilityLocations);
 		_log.info("total time: " + (System.currentTimeMillis() - millis));
 		_log.info("done");
+		
+		//tmp.delete();
 		// displayMap(featureSource);
 	}
 
 	private static void createXPressDataFile(SolutionSet solutionSet,
 			String folder, String filename) throws IOException {
-		
+		tmp = new File("xpress\\tmpData.dat");
 		File file = new File(folder + filename + System.currentTimeMillis() + ".dat");
 		_log.info("exporting to " + file.getAbsolutePath());
 		file.createNewFile();
@@ -115,7 +125,10 @@ public class CoverageOptimization {
 			pw.print("]");
 		}
 		pw.print("]");
+		pw.flush();
 		pw.close();
+		if(tmp.exists()){tmp.delete();}
+		Files.copy(file.toPath(), tmp.toPath());
 	}
 
 	private static void outputWeights() {
