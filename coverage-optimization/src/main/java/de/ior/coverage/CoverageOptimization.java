@@ -87,7 +87,8 @@ public class CoverageOptimization {
 		
 		List<Coordinate> coordinates = new ArrayList<Coordinate>();
 		for(Integer i: optimalFacilityLocations){
-			Point2D solutionPoint = solutionSet.getSolutions().get(i).getSolutionPoint();
+			//TODO DOUBLE CHECK INDEX WITH XPRESS (xpress might start with 1, java with 0!!!)
+			Point2D solutionPoint = solutionSet.getSolutions().get(i-1).getSolutionPoint();
 			coordinates.add(new Coordinate(solutionPoint.getX(), solutionPoint.getY()));
 		}
 		File export = new File(ProjectProperties.getProperties().getProperty("export-folder") + "\\campus_points_" +System.currentTimeMillis()+ ".shp");
@@ -149,7 +150,10 @@ public class CoverageOptimization {
 		_log.info("reducing PIPS...");
 		SolutionSet solutionSet = new SolutionSet();
 		double circleRadius = java.lang.Double.parseDouble(ProjectProperties.getProperties().getProperty("circle-radius"));
+		int i=0;
 		for(Point2D p : PIPS){
+			i++;
+			_log.info("checking " + i +" of " + PIPS.size());
 			Ellipse2D.Double serviceRadius = new Ellipse2D.Double(p.getX() - circleRadius, p.getY() - circleRadius, circleRadius * 2 , circleRadius * 2);
 			java.awt.Rectangle bounds = serviceRadius.getBounds();
 			Rectangle searchRectangle = new Rectangle((float)bounds.getMinX(), (float)bounds.getMinY(), (float)bounds.getMaxX(), (float)bounds.getMaxY());
