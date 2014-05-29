@@ -26,8 +26,9 @@ public class PolygonWrapper {
 	private Area coveringCirclesIntersection;
 
 	static{
-		circleRadius = Double.parseDouble(ProjectProperties.getProperties().getProperty(("circle-radius")));
-		_log.info("using circle radius: " + circleRadius);
+//		circleRadius = Double.parseDouble(ProjectProperties.getProperties().getProperty(("circle-radius")));
+		circleRadius = ProjectProperties.getCircleRadius();
+		_log.debug("using circle radius: " + circleRadius);
 	}
 	public Area getCoveringCirclesIntersection() {
 		return coveringCirclesIntersection;

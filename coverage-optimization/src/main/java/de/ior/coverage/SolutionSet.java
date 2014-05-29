@@ -14,16 +14,19 @@ public class SolutionSet {
 
 	int id = 1;
 	
-	private List<Solution> solutions;
-	
+//	private List<Solution> solutions;
+	private HashMap<Integer, Solution> solutions;
+
 	public SolutionSet(){
-		this.solutions = new ArrayList<Solution>();
+//		this.solutions = new ArrayList<Solution>();
+		this.solutions = new HashMap<Integer, SolutionSet.Solution>();
 	}
 	
 	public void addSolution(Point2D solution, HashSet<Integer> coveredPolygonIds){
 		boolean isDominated = false;
 		
-		for(Solution s : getSolutions()){
+		for(Integer i : getSolutions().keySet()){
+			Solution s = solutions.get(i);
 			if(s.coveredPolygonIds.containsAll(coveredPolygonIds)){
 				isDominated = true;
 				if(_log.isDebugEnabled()){
@@ -36,27 +39,35 @@ public class SolutionSet {
 			}
 		}
 		if(!isDominated){
-			this.getSolutions().add(new Solution(coveredPolygonIds, solution, id++));
+//			this.getSolutions().add(new Solution(coveredPolygonIds, solution, id++));
+			this.getSolutions().put(id, new Solution(coveredPolygonIds, solution, id));
+			id++;
 		}
 	}
 	
-	public List<Point2D> getSolutionPoints(){
-		List<Point2D> result = new ArrayList<Point2D>();
-		for(Solution s : getSolutions()){
-			result.add(s.getSolutionPoint());
-		}
-		return result;
-	}
+//	public List<Point2D> getSolutionPoints(){
+//		List<Point2D> result = new ArrayList<Point2D>();
+//		for(Solution s : getSolutions()){
+//			result.add(s.getSolutionPoint());
+//		}
+//		
+//		for(Solution)
+//		return result;
+//	}
 	
-	public List<Solution> getSolutions() {
+//	public List<Solution> getSolutions() {
+//		return solutions;
+//	}
+
+	public HashMap<Integer, Solution> getSolutions(){
 		return solutions;
 	}
-
-
+	
 	public HashMap<Integer, HashSet<Integer>> getPolygonToSolutionMapping(){
 		HashMap<Integer, HashSet<Integer>> polygonToSolution = new HashMap<Integer, HashSet<Integer>>();
 		
-		for(Solution s : solutions){
+		for(Integer i : solutions.keySet()){
+			Solution s = solutions.get(i);
 //			_log.info("mapping solution Id: " + s.getId() );
 			for(Integer polygonId : s.getCoveredPolygonIds()){
 				if(polygonToSolution.get(polygonId) == null){
@@ -75,6 +86,8 @@ public class SolutionSet {
 		private HashSet<Integer> coveredPolygonIds;
 		private Point2D solutionPoint;
 		private int id;
+		
+		
 
 		public Solution(HashSet<Integer> coveredPolygonIds, Point2D solution,
 				int id) {

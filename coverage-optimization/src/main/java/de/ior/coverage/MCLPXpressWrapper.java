@@ -59,7 +59,8 @@ public class MCLPXpressWrapper {
      model=xprm.loadModel("xpress\\MCLP_v002.bim");
      
      MyData myData = new MyData();
-     myData.p = Integer.parseInt(ProjectProperties.getProperties().getProperty("number-of-facilities"));
+//     myData.p = Integer.parseInt(ProjectProperties.getProperties().getProperty("number-of-facilities"));
+     myData.p = ProjectProperties.getNumberOfFacilities();
      myData.initFile = dataFile;
      
      MySol[] solution = new MySol[myData.p];

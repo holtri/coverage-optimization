@@ -120,9 +120,10 @@ public class ShapeFileExporter{
 				Point point = createPoint(c);
 				featureBuilder.add(point);
 			} else if (type == Polygon.class) {
-				Polygon circle = createCircle(c,
-						java.lang.Double.parseDouble(ProjectProperties
-								.getProperties().getProperty("circle-radius")));
+//				Polygon circle = createCircle(c,
+//						java.lang.Double.parseDouble(ProjectProperties
+//								.getProperties().getProperty("circle-radius")));
+				Polygon circle = createCircle(c,ProjectProperties.getCircleRadius());
 				featureBuilder.add(circle);
 			}
 			SimpleFeature feature = featureBuilder.buildFeature(null);
