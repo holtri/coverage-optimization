@@ -5,7 +5,7 @@ import java.util.Properties;
 
 public class ProjectProperties {
 
-	private static int numberOfFacilities;
+
 	private static double circleRadius;
 	private static Properties properties;
 	static {
@@ -24,12 +24,7 @@ public class ProjectProperties {
 	public static void setProperties(Properties properties) {
 		ProjectProperties.properties = properties;
 	}
-	public static int getNumberOfFacilities() {
-		return numberOfFacilities;
-	}
-	public static void setNumberOfFacilities(int numberOfFacilities) {
-		ProjectProperties.numberOfFacilities = numberOfFacilities;
-	}
+
 	public static double getCircleRadius() {
 		return circleRadius;
 	}

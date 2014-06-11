@@ -27,15 +27,15 @@ public class MCLPXpressWrapper {
     	public String initFile;
 
 	}
-	public static void main (String[] args){
-		new MCLPXpressWrapper().solveMCLP("xpress\\tmpData.dat");
-	}
+//	public static void main (String[] args){
+//		new MCLPXpressWrapper().solveMCLP("xpress\\tmpData.dat", 5);
+//	}
 	
-	public HashSet<Integer> solveMCLP(String dataFile) {
+	public HashSet<Integer> solveMCLP(String dataFile, int numberOfFacilities) {
 		MySol[] solution = null;
 		HashSet<Integer> facilitiesIndex = new HashSet<Integer>();
 		try {
-			solution = runXpressModel(dataFile);
+			solution = runXpressModel(dataFile, numberOfFacilities);
 		} catch (XPRMLicenseError e) {
 			_log.error("License error : " + e.getMessage());
 		} catch (java.lang.Exception e) {
@@ -47,7 +47,7 @@ public class MCLPXpressWrapper {
 		return facilitiesIndex;
 	}
 	
-	static MySol[] runXpressModel(String dataFile) throws XPRMLicenseError, IOException, XPRMCompileException
+	static MySol[] runXpressModel(String dataFile, int numberOfFacilities) throws XPRMLicenseError, IOException, XPRMCompileException
     {
 	 String modelFile = "xpress\\MCLP_v002.mos";
      XPRMModel model;
@@ -60,7 +60,8 @@ public class MCLPXpressWrapper {
      
      MyData myData = new MyData();
 //     myData.p = Integer.parseInt(ProjectProperties.getProperties().getProperty("number-of-facilities"));
-     myData.p = ProjectProperties.getNumberOfFacilities();
+//     myData.p = ProjectProperties.getNumberOfFacilities();
+     myData.p = numberOfFacilities;
      myData.initFile = dataFile;
      
      MySol[] solution = new MySol[myData.p];

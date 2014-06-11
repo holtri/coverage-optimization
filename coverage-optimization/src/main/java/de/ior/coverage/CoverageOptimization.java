@@ -37,12 +37,13 @@ import de.ior.utils.ProjectProperties;
 
 public class CoverageOptimization {
 
-	static ArrayList<PolygonWrapper> polygons = new ArrayList<PolygonWrapper>();
+	ArrayList<PolygonWrapper> polygons;
+	
 	private static final Logger _log = LogManager
 			.getLogger(CoverageOptimization.class.getName());
-	private static File tmp;
+	private File tmp;
 
-	static class DetectedPolygons implements TIntProcedure {
+	class DetectedPolygons implements TIntProcedure {
 
 		private List<Integer> ids = new ArrayList<Integer>();
 
@@ -57,24 +58,19 @@ public class CoverageOptimization {
 	}
 
 	public static void main(String[] args) throws Exception {
-
-		runCoverageOptimization();
+		for (int circleRadius = 30; circleRadius <= 100; circleRadius = circleRadius + 10) {
+				ProjectProperties.setCircleRadius(circleRadius);
+				_log.info("####### run with circleRadius: " + ProjectProperties.getCircleRadius());
+					new CoverageOptimization().runCoverageOptimization();
+		}
 
 	}
 
-	private static void runCoverageOptimization() throws IOException, Exception {
-
-
-		for (int circleRadius = 30; circleRadius <= 70; circleRadius = circleRadius + 10) {
-			for (int numberOfFacilities = 5; numberOfFacilities < 40; numberOfFacilities++) {
-				
-				ProjectProperties.setNumberOfFacilities(numberOfFacilities);
-				ProjectProperties.setCircleRadius(circleRadius);
-				_log.info("####### run with circleRadius: " + circleRadius + " numberOfFacilities: " + numberOfFacilities);
+	private void runCoverageOptimization() throws IOException, Exception {
+		
+				polygons = new ArrayList<PolygonWrapper>();
 				
 				SpatialIndex si = setup();
-				
-				long time = System.currentTimeMillis();
 
 				HashSet<Point2D> PIPS = calculatePIPS(si);
 				_log.info("found " + PIPS.size()
@@ -90,22 +86,29 @@ public class CoverageOptimization {
 								"export-folder"),
 						ProjectProperties.getProperties().getProperty(
 								"export-filename"));
-
-				HashSet<Integer> optimalFacilityLocations = new MCLPXpressWrapper()
-						.solveMCLP("xpress\\tmpData.dat");
-				time = System.currentTimeMillis() - time;
-
-				double coverage = calculateCoverage(optimalFacilityLocations, solutionSet);
-				_log.info("achieved coverage: " + coverage);
-				exportShapeFiles(solutionSet, optimalFacilityLocations, time,
-						coverage, PIPS.size(), solutionSet.getSolutions().keySet().size());
-			}
-		}
-		// _log.info("total time: " + (time));
-		// _log.info("done");
+				for (int numberOfFacilities = 15; numberOfFacilities <= 60; numberOfFacilities = numberOfFacilities + 5) {
+					_log.info("##running optimization with p=" + numberOfFacilities);
+					long time = System.currentTimeMillis();
+					HashSet<Integer> optimalFacilityLocations = new MCLPXpressWrapper()
+							.solveMCLP("xpress\\tmpData.dat", numberOfFacilities);
+					time = System.currentTimeMillis() - time;
+		
+					double coverage = calculateCoverage(optimalFacilityLocations,
+							solutionSet);
+					_log.info("achieved coverage: " + coverage);
+					exportShapeFiles(solutionSet, optimalFacilityLocations, time,
+							coverage, PIPS.size(), solutionSet.getSolutions().keySet()
+									.size(), numberOfFacilities);
+					optimalFacilityLocations = null;
+				}
+				si= null;
+				PIPS = null;
+				solutionSet = null;
+				polygons=null;
+			
 	}
 
-	private static double calculateCoverage(HashSet<Integer> optimalFacilityLocations, SolutionSet solutions) {
+	private double calculateCoverage(HashSet<Integer> optimalFacilityLocations, SolutionSet solutions) {
 		double totalArea = 0;
 		
 		for (PolygonWrapper pw : polygons) {
@@ -125,18 +128,19 @@ public class CoverageOptimization {
 		return coverage/totalArea;
 	}
 
-	private static SpatialIndex setup() throws IOException, Exception {
+	private SpatialIndex setup() throws IOException, Exception {
 		SimpleFeatureSource featureSource = loadShapefile();
 
 		extractPolygons(featureSource);
 
 		SpatialIndex si = setupRTree();
+		
 		return si;
 	}
 
-	private static void exportShapeFiles(SolutionSet solutionSet,
+	private void exportShapeFiles(SolutionSet solutionSet,
 			HashSet<Integer> optimalFacilityLocations, long time,
-			double coverage, int PIPSSize, int solutionSetSize) throws IOException {
+			double coverage, int PIPSSize, int solutionSetSize, int numberOfFacilities) throws IOException {
 
 		List<Coordinate> coordinates = new ArrayList<Coordinate>();
 		_log.debug("solution point indices: " + optimalFacilityLocations);
@@ -159,7 +163,7 @@ public class CoverageOptimization {
 						.getProperty("export-folder"));
 		sb.append("\\" + System.currentTimeMillis() + "campus_service_");
 		sb.append("r_" + (int)ProjectProperties.getCircleRadius());
-		sb.append("p_" + ProjectProperties.getNumberOfFacilities());
+		sb.append("p_" + numberOfFacilities);
 		
 		
 		new File(sb.toString()).mkdir();
@@ -172,24 +176,25 @@ public class CoverageOptimization {
 		export = new File(sb.toString() + "\\description.txt");
 		export.createNewFile();
 		
-		exportDescription(time, coverage, PIPSSize, solutionSetSize, export);
+		exportDescription(time, coverage, PIPSSize, solutionSetSize, export, numberOfFacilities);
 	}
 
-	private static void exportDescription(long time, double coverage,
-			int PIPSSize, int solutionSetSize, File export)
+	private void exportDescription(long time, double coverage,
+			int PIPSSize, int solutionSetSize, File export, int numberOfFacilities)
 			throws FileNotFoundException {
 		PrintWriter pw = new PrintWriter(export);
 		pw.println("radius: " + ProjectProperties.getCircleRadius());
 		pw.println("number of facilities: "
-				+ ProjectProperties.getNumberOfFacilities());
+				+ numberOfFacilities);
 		pw.println("time: " + time);
 		pw.println("coverage: " + coverage);
 		pw.println("PIPS size: " + PIPSSize);
 		pw.println("RPIPS: " + solutionSetSize);
+		pw.println("shapefile: " + ProjectProperties.getProperties().getProperty("filename"));
 		pw.close();
 	}
 
-	private static void createXPressDataFile(SolutionSet solutionSet,
+	private void createXPressDataFile(SolutionSet solutionSet,
 			String folder, String filename) throws IOException {
 		tmp = new File("xpress\\tmpData.dat");
 		File file = new File(folder + filename + System.currentTimeMillis()
@@ -225,7 +230,7 @@ public class CoverageOptimization {
 		Files.copy(file.toPath(), tmp.toPath());
 	}
 
-	private static SolutionSet reducePIPS(HashSet<Point2D> PIPS, SpatialIndex si) {
+	private SolutionSet reducePIPS(HashSet<Point2D> PIPS, SpatialIndex si) {
 
 		_log.info("reducing PIPS...");
 		SolutionSet solutionSet = new SolutionSet();
@@ -260,7 +265,7 @@ public class CoverageOptimization {
 		return solutionSet;
 	}
 
-	private static HashSet<Integer> calculateCoveredPolygons(
+	private HashSet<Integer> calculateCoveredPolygons(
 			Ellipse2D.Double serviceRadius, List<Integer> ids) {
 		HashSet<Integer> coveredPolygonIds = new HashSet<Integer>();
 		;
@@ -282,7 +287,7 @@ public class CoverageOptimization {
 		return coveredPolygonIds;
 	}
 
-	private static HashSet<Point2D> calculatePIPS(SpatialIndex si) {
+	private HashSet<Point2D> calculatePIPS(SpatialIndex si) {
 
 		HashSet<Point2D> PIPS = new HashSet<Point2D>();
 
@@ -294,6 +299,7 @@ public class CoverageOptimization {
 			DetectedPolygons intersected = new DetectedPolygons();
 			si.intersects(polygonToCheck.getSpatialStorageRectangle(),
 					intersected);
+			
 			List<Integer> ids = intersected.getIds();
 
 			intersectPolygon(PIPS, i, polygonToCheck, ids);
@@ -301,7 +307,7 @@ public class CoverageOptimization {
 		return PIPS;
 	}
 
-	private static void intersectPolygon(HashSet<Point2D> PIPS, int i,
+	private void intersectPolygon(HashSet<Point2D> PIPS, int i,
 			PolygonWrapper polygonToCheck, List<Integer> ids) {
 		if (ids.size() == 1) {
 			PIPS.addAll(polygonToCheck.getCoveringCircleIntersectionPoints());
@@ -316,7 +322,7 @@ public class CoverageOptimization {
 		}
 	}
 
-	private static SpatialIndex setupRTree() {
+	private SpatialIndex setupRTree() {
 		SpatialIndex si = new RTree();
 		si.init(null);
 
@@ -326,18 +332,19 @@ public class CoverageOptimization {
 		return si;
 	}
 
-	private static void extractPolygons(SimpleFeatureSource featureSource)
+	private void extractPolygons(SimpleFeatureSource featureSource)
 			throws Exception {
+		
 		SimpleFeatureIterator features = featureSource.getFeatures().features();
 		while (features.hasNext()) {
 			SimpleFeature next = features.next();
 			MultiPolygon mp = (MultiPolygon) next.getDefaultGeometry();
 			polygons.add(new PolygonWrapper(mp));
 		}
-
+		features.close();
 	}
 
-	private static SimpleFeatureSource loadShapefile() throws IOException {
+	private SimpleFeatureSource loadShapefile() throws IOException {
 		File file = new File(ProjectProperties.getProperties().getProperty(
 				"filename"));
 		// File file = new File("testdata" + File.separator + "testdata.shp");

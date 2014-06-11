@@ -21,15 +21,10 @@ public class PolygonWrapper {
 
     private static final Logger _log = LogManager.getLogger(PolygonWrapper.class.getName());
 
-	public final static double circleRadius;
 	private MultiPolygon mp;
 	private Area coveringCirclesIntersection;
 
-	static{
-//		circleRadius = Double.parseDouble(ProjectProperties.getProperties().getProperty(("circle-radius")));
-		circleRadius = ProjectProperties.getCircleRadius();
-		_log.debug("using circle radius: " + circleRadius);
-	}
+	
 	public Area getCoveringCirclesIntersection() {
 		return coveringCirclesIntersection;
 	}
@@ -43,7 +38,7 @@ public class PolygonWrapper {
 
 		java.awt.Rectangle bounds = coveringCirclesIntersection.getBounds();
 		double sqrt = Math.sqrt(Math.pow(bounds.width,2) * Math.pow(bounds.height,2));
-		if(sqrt<circleRadius){
+		if(sqrt<ProjectProperties.getCircleRadius()){
 			throw new Exception("circle Radius does not cover polygon");
 		}
 	}
@@ -67,9 +62,9 @@ public class PolygonWrapper {
 
 	private void calculateCoveringCirclesIntersection() {
 		Coordinate[] coordinates = mp.getCoordinates();
-		Area intersection = new Area(new Ellipse2D.Double(coordinates[1].x - circleRadius, coordinates[1].y - circleRadius, circleRadius * 2, circleRadius * 2));
+		Area intersection = new Area(new Ellipse2D.Double(coordinates[1].x - ProjectProperties.getCircleRadius(), coordinates[1].y - ProjectProperties.getCircleRadius(), ProjectProperties.getCircleRadius() * 2, ProjectProperties.getCircleRadius() * 2));
 		for (int i = 2; i < coordinates.length; i++) {
-			intersection.intersect(new Area(new Ellipse2D.Double(coordinates[i].x - circleRadius, coordinates[i].y - circleRadius, circleRadius * 2, circleRadius * 2)));
+			intersection.intersect(new Area(new Ellipse2D.Double(coordinates[i].x - ProjectProperties.getCircleRadius(), coordinates[i].y - ProjectProperties.getCircleRadius(), ProjectProperties.getCircleRadius() * 2, ProjectProperties.getCircleRadius() * 2)));
 		}
 		this.coveringCirclesIntersection = intersection;
 	}
